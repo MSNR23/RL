@@ -56,7 +56,7 @@ def q_learning(s_values):
 
             # Q値の更新
             reward_scale = 0.01
-            reward = reward_scale * (theta**2 +  omega**2 + 0.1 * (next_theta - theta)**2 + 0.1 * (next_omega - omega)**2)  # 報酬の設計（例：振り子が安定している場合に報酬を与える）theta**2 + 0.1 * omega**2　→　theta**2 + omega**2
+            reward = reward_scale * (theta**2 +  omega**2 + 0.1 * (next_theta - theta)**2 + 0.1 * (next_omega - omega)**2)  
             
             total_reward = reward
             Q[theta_bin, omega_bin, action] += alpha * (reward + gamma * np.max(Q[next_theta_bin, next_omega_bin, :]) - Q[theta_bin, omega_bin, action])
