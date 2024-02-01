@@ -4,18 +4,6 @@ from matplotlib.animation import FuncAnimation
 import csv
 import time
 
-# # Q学習のパラメータ
-# alpha = 0.1  # 学習率
-# gamma = 0.9  # 割引率
-# epsilon = 0.1  # ε-greedy法のε
-
-# # Qテーブルの初期化
-# num_theta_bins = 4
-# num_omega_bins = 4
-# num_actions = 3  # 行動数（例: -1、0、1）
-
-# Q = np.zeros((num_theta_bins, num_omega_bins, num_actions))
-
 # 定数
 g = 9.80  # 重力加速度
 l = 1.0   # 振り子の長さ
@@ -44,70 +32,7 @@ def update_world(theta, omega, action):
     theta_new = theta + dt * omega
     omega_new = omega + dt * aa
 
-    # if omega_new > omega:
-    #     reward = 1.0
-    # else:
-    #     reward = -1.0
     return theta_new, omega_new
-
-# def main():
-#     # シミュレーションの初期化
-#     # 時間パラメータ
-#     dt = 0.01  # 時間刻み幅
-#     t_end = 10.0  # シミュレーション終了時間
-#     t_values = np.arange(0, t_end, dt)
-#     theta_values = []
-#     omega_values = []
-
-#     # 初期条件
-#     theta = theta0
-#     omega = omega0
-
-#     torque_f = F * l # 外力によるトルク
-#     torque_g = -m * g * l * np.sin(theta) # 重力によるトルク
-#     torque = torque_f + torque_g # 合計のトルク
-
-
-#     # シミュレーション実行
-#     for t in t_values:
-#         theta_values.append(theta)
-#         omega_values.append(omega)
-#         theta, omega = update_world(theta, omega, F, torque, dt)
-
-#     # CSVファイルにデータを保存
-#     csv_file_path = 'single_pendulum_rl_data.csv'
-#     with open(csv_file_path, 'w', newline='') as csvfile:
-#         csv_writer = csv.writer(csvfile)
-#         csv_writer.writerow(['Time', 'Theta', 'Omega'])
-#         for i in range(len(t_values)):
-#             csv_writer.writerow([t_values[i], theta_values[i], omega_values[i]])
-    
-#     print(f'Data has been saved to {csv_file_path}')
-
-#     # アニメーションの準備
-#     fig, ax = plt.subplots()
-#     ax.set_xlim(-1.5, 1.5)
-#     ax.set_ylim(-1.5, 1.5)
-#     ax.set_aspect('equal')
-#     line, = ax.plot([], [], 'o-', lw=2)
-
-#     # アニメーションの更新関数
-#     def update(frame):
-#         x = l * np.sin(theta_values[frame])
-#         y = -l * np.cos(theta_values[frame])
-#         line.set_data([0, x], [0, y])
-#         return [line]
-
-#     # アニメーションの作成
-#     ani = FuncAnimation(fig, update, frames=len(t_values), blit=True)
-
-#     # アニメーションの保存（GIF形式）
-#     animation_file_path = 'single_pendulum_rl_animation.gif'
-#     ani.save(animation_file_path, writer='pillow', fps=30)
-#     print(f'Animation has been saved to {animation_file_path}')
-
-#     # アニメーションの表示
-#     plt.show()
 
 # Q学習のパラメータ
 alpha = 0.1  # 学習率
@@ -173,8 +98,6 @@ def q_learning(update_world):
                 next_theta, next_omega = update_world(theta, omega, action)
                 next_theta_bin, next_omega_bin = discretize_state(next_theta, next_omega)
                 
-                # CSVファイルにデータを保存
-                # csv_writer.writerow([i * dt, theta, omega])
 
                 # Q値の更新
                 reward_scale = 0.01
@@ -194,12 +117,8 @@ def q_learning(update_world):
                 print(f'Epoch: {epoch + 1}, Total Reward: {total_reward}')
                 time.sleep(0.01)
 
-        print(f'Data for epoch {epoch + 1} has been saved to {csv_file_path}')
-            
-
+        print(f'Data for epoch {epoch + 1} has been saved to {csv_file_path}')            
 
 if __name__ == "__main__":
-    # mainプログラムの実行
-    # main()
     # Q学習の実行
     q_learning(update_world)
