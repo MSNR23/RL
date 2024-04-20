@@ -9,26 +9,29 @@ close all;
 mdl = "doublePendulum";
 open_system(mdl);
 
-numObs = 1; %number of observation
+numObs = 5; %number of observation
 obsInfo = rlNumericSpec([numObs 1]);
 obsInfo.Name = "Angular velocity";
+
+PelvisAngle = 20;
 
 numAct = 1;
 actInfo = rlNumericSpec([numAct 1],'LowerLimit',-1,'UpperLimit',1);
 actInfo.Name = 'torque';
 
-blk = mdl + '/RL Agent';
+blk = mdl + '/RLAgent';
 env = rlSimulinkEnv(mdl,blk,obsInfo,actInfo);
-env.ResetFcn = @ResetFnc(PelvisAngle);
+env.ResetFcn = @(in) ResetFnc(in);
 
-%Q(S,A|θQ)-Critics that estimate the expected cumulative long-term reward
+%Q(S,A|θQ)-Critics that estimate the expected cucmulative long-term reward
 %of a policy for a given discrete action A and a given observation S.
-obsPath = [ %Observation path layers
-    featureInputLayer(prod(obsInfo.Dimension))
-    fullyConnectedLayer(5)
-    reluLayer
-    fullyConnectedLayer(5,Name="obsout")
+obsPath = [...
+    featureInputLayer(prod(obsInfo.Dimension)),...
+    fullyConnectedLayer(5),...
+    reluLayer,...
+    fullyConnectedLayer(5,Name="obsout"),...
     ];
+
 actPath = [ %Action path layers
     featureInputLayer(prod(actInfo.Dimension))
     fullyConnectedLayer(5)
@@ -37,12 +40,11 @@ actPath = [ %Action path layers
     ];
 comPath = [ %Common path to output layers %Concatenate two layers along dimension one
     concatenationLayer(1,2,Name="cct")
-    fullyConnectedLayer
+    fullyConnectedLayer(5)
     reluLayer
     fullyConnectedLayer(1,Name="output")
 ];
-net = dlnetwork;
-net = addLayers(net,obsPath);
+net = dlnetwork(obsPath);
 net = addLayers(net,actPath);
 net = addLayers(net,comPath);
 
@@ -53,11 +55,43 @@ plot(net)
 net = initialize(net);
 summary(net);
 
-critic = rlQValueFunction(net,observationInfo,actorInfo);
+critic = rlQValueFunction(net,obsInfo,actInfo);
 
-opt = rlQAgentOptions(SampleTime=1.0);
-opt.DiscountFacor = 0.95;
+actorNet = [
+    featureInputLayer(prod(obsInfo.Dimension))
+    fullyConnectedLayer(16)
+    tanhLayer
+    fullyConnectedLayer(16)
+    tanhLayer
+    fullyConnectedLayer(prod(actInfo.Dimension))
+    ];
+actorNet = dlnetwork(actorNet);
+actorNet = initialize(actorNet);
+summary(actorNet)
+actor = rlContinuousDeterministicActor(actorNet,obsInfo,actInfo);
 
-agent = rlQAgent(critic,agentOptions);
+criticOpts = rlOptimizerOptions(...
+    LearnRate=1e-03,...
+    GradientThreshold=1);
+actorOpts = rlOptimizerOptions(...
+     LearnRate=1e-03,...
+     GradientThreshold=1);
+opt = rlDDPGAgentOptions(...
+    SampleTime=1.0,...
+    CriticOptimizerOptions=criticOpts,...
+    ActorOptimizerOptions=actorOpts,...
+    ExperienceBufferLength=1e5,...
+    DiscountFactor=0.99,...
+    MiniBatchSize=128);
 
-trainingStats = train(agent,env,trainOpts);
+agent = rlDDPGAgent(actor,critic,opt);
+
+options = trainingOptions("sgdm", ...
+    LearnRateSchedule="piecewise", ...
+    LearnRateDropFactor=0.2, ...
+    LearnRateDropPeriod=5, ...
+    MaxEpochs=20, ...
+    MiniBatchSize=64, ...
+    Plots="training-progress")
+
+trainingStats = train(agent,env,rlTrainingOptions);

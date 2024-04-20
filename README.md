@@ -3,8 +3,5 @@ This repository contains
 * File
 
 ## hoge
-´´´python
-python
-´´´
 
 
